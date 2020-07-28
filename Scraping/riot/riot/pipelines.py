@@ -22,10 +22,6 @@ class RiotPipeline(object):
     #crezione database
         self.db = self.client[self.mongo_db]
     
-    #creazione tabella match
-        #self.collection = db['user']
-
-    
     def close_spder(self, spider):
         self.client.close()
 
