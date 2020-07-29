@@ -65,8 +65,12 @@ DOWNLOAD_DELAY = 1.2
 # Configure item pipelines
 # See https://doc.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-    'riot.pipelines.RiotPipeline': 300,
+    'riot.pipelines.RiotPipeline': 300, 
 }
+
+LOG_ENABLED = True
+LOG_LEVEL = 'INFO' #Minimum level to log. Available levels are: CRITICAL, ERROR, WARNING, INFO, DEBUG. 
+LOG_FILE = 'logfile_riot.log'
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://doc.scrapy.org/en/latest/topics/autothrottle.html

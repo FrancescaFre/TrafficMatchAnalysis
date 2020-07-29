@@ -11,14 +11,12 @@ from . import item_data
 class RiotPipeline(object):
 
     def __init__(self):
- 
-        self.mongo_uri = ["localhost", 27017]
         self.mongo_db = "riots_data"
 
 
     def open_spider(self, spider):
     #connessione al database
-        self.client = pymongo.MongoClient('localhost',27017)
+        self.client = pymongo.MongoClient('localhost',int(spider.port))
     #crezione database
         self.db = self.client[self.mongo_db]
     
