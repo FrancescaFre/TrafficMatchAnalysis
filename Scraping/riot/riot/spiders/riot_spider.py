@@ -10,7 +10,8 @@ class RiotSpider(scrapy.Spider):
         #gli argomenti passati con -a sono messi di default a self.nome_arg 
         logging.basicConfig(filename='file_info.log',level=logging.INFO)
         yield scrapy.Request(f"https://euw1.api.riotgames.com/lol/summoner/v4/summoners/by-name/{self.user}?api_key={self.riot_key}")
-        
+        yield scrapy.Request(f"https://euw1.api.riotgames.com/lol/summoner/v4/summoners/by-name/wicked%20symphony?api_key={self.riot_key}")
+
     #---------------------------------------- PARSE SUMMONER
     #controllo le informazioni del summoner
     def parse(self, response):
