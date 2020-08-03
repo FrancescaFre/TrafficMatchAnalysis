@@ -52,7 +52,8 @@ class RiotSpider(scrapy.Spider):
             for matchId in list_matches: 
                 request_match = scrapy.Request(
                     url = self._getUrl("match", matchId),
-                    callback=self.parse_match
+                    callback=self.parse_match, 
+                    priority = 10
                 )
                 yield request_match  
                         
@@ -81,11 +82,12 @@ class RiotSpider(scrapy.Spider):
        
 
     def _getUrl(self, type, id):
-        
+
         if type == "summoner by name": return f"https://euw1.api.riotgames.com/lol/summoner/v4/summoners/by-name/{id}?api_key={self.riot_key}"
         if type == "matchlist": return f"https://euw1.api.riotgames.com/lol/match/v4/matchlists/by-account/{id}?api_key={self.riot_key}"
         if type == "match": return f"https://euw1.api.riotgames.com/lol/match/v4/matches/{id}?api_key={self.riot_key}"
         if type == "summoner": return f"https://euw1.api.riotgames.com/lol/summoner/v4/summoners/by-account/{id}?api_key={self.riot_key}"
 
+#Crea gli URL per la ricerca paginata della lista di match 
     def _getUrl_(self, type, id, index):
         return f"https://euw1.api.riotgames.com/lol/match/v4/matchlists/by-account/{id}?beginIndex={index}&api_key={self.riot_key}"
