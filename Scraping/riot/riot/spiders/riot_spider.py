@@ -21,33 +21,41 @@ class RiotSpider(scrapy.Spider):
         item['level'] = summoner_data['summonerLevel']
         item['accountId'] = summoner_data['accountId']
         item['puuid'] = summoner_data['puuid']
+        item['number_matches'] = 0
+        item['banned'] = True
         logging.info(f"START parse matchlist userId: {item['accountId']}")
-        yield item
+      
 
         request_matches = scrapy.Request(
             url = self._getUrl("matchlist", item['accountId']),
             callback= self.get_all_matches, 
-            cb_kwargs = dict(args = [], count = 0, accountId = item['accountId'])
+            cb_kwargs = dict(args = [], count = 0, item = item),
+            priority = 2
             )
         yield request_matches
 
     #---------------------------------------- PARSE ALL MATCHES
     #ciclo tutti i match raccogliendoli
-    def get_all_matches(self, response, args, count, accountId): 
+    def get_all_matches(self, response, args, count, item): 
+        accountId = item['accountId']
         index = count + 100
         list_matches = args
 
         summoner_matches = eval(response.text)['matches']
+        
         list_matches += [x['gameId'] for x in summoner_matches] #sono liste di numeri, posso farlo
         if len(summoner_matches) != 0:
             request_matches = scrapy.Request(
                 url = self._getUrl_(1,accountId,index),
                 callback = self.get_all_matches, 
                 priority = 2,
-                cb_kwargs = dict(args = list_matches, count = index, accountId = accountId)
+                cb_kwargs = dict(args = list_matches, count = index, item = item)
             ) 
             yield request_matches
         else: 
+            item['banned'] = False
+            item['number_matches'] = len(list_matches)
+            yield item
             #ciclo tutti i match per ottenerne una chiama per ogni match da controllare con parse_match
             logging.info(f"END parse matchlist userId: {accountId} - matches: {len(list_matches)}")
             for matchId in list_matches: 
