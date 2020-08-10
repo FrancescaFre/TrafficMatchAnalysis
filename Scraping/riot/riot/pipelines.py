@@ -11,8 +11,7 @@ from . import item_data
 class RiotPipeline(object):
 
     def __init__(self):
-        self.mongo_db = "riots_data"
-
+        self.mongo_db = "riots_data_second"
 
     def open_spider(self, spider):
     #connessione al database

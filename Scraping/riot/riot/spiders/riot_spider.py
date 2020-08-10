@@ -43,6 +43,7 @@ class RiotSpider(scrapy.Spider):
             request_matches = scrapy.Request(
                 url = self._getUrl_(1,accountId,index),
                 callback = self.get_all_matches, 
+                priority = 2,
                 cb_kwargs = dict(args = list_matches, count = index, accountId = accountId)
             ) 
             yield request_matches
@@ -53,7 +54,7 @@ class RiotSpider(scrapy.Spider):
                 request_match = scrapy.Request(
                     url = self._getUrl("match", matchId),
                     callback=self.parse_match, 
-                    priority = 10
+                    priority = 1
                 )
                 yield request_match  
                         
