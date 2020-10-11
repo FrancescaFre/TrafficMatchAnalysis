@@ -1,16 +1,31 @@
 #https://docs.scrapy.org/en/latest/topics/request-response.html#scrapy.http.Response
 import scrapy
+import itertools
 import logging
+from pymongo import MongoClient
 from ..item_data import User_data, Match_data
 
 class RiotSpider(scrapy.Spider):
     name = 'riot'
     
     def start_requests(self):
-        #gli argomenti passati con -a sono messi di default a self.nome_arg 
-        logging.basicConfig(filename='file_info.log',level=logging.INFO)
-        yield scrapy.Request(f"https://euw1.api.riotgames.com/lol/summoner/v4/summoners/by-name/{self.user}?api_key={self.riot_key}")
-        yield scrapy.Request(f"https://euw1.api.riotgames.com/lol/summoner/v4/summoners/by-name/wicked%20symphony?api_key={self.riot_key}")
+        #collego il db con il crawler (collego la porta data in input)
+        client = MongoClient('localhost', int(self.port)) 
+        #carico i dati del db nella var riot_db
+        riot_db= client.riots_data_second
+        #per ogni match prendo tutti gli utenti
+        set_p= set(itertools.chain.from_iterable(((uid for uid in match['partecipants_list'] if uid!="0") for match in riot_db.match.find() )))
+        
+        print(len(set_p)) #stampo il numero di player unici 
+
+        #per ogni utente genero una richiesta: 
+        for accountId in set_p:
+            request_summoner = scrapy.Request(
+                url = self._getUrl("summoner", accountId)
+            )
+            yield request_summoner
+        
+    #ASSUMO che usando il file REQUESTS.SEEN, gli account già parsati vengano ignorati    
 
     #---------------------------------------- PARSE SUMMONER
     #controllo le informazioni del summoner
