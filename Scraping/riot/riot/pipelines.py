@@ -10,12 +10,14 @@ from . import item_data
 
 class RiotPipeline(object):
 
-    def __init__(self):
-        self.mongo_db = "riots_data_second"
+    #def __init__(self):
+        #self.mongo_db = "riots_data_second"
         #self.mongo_db = "riots_data_test"
+        
 
     def open_spider(self, spider):
     #connessione al database
+        self.mongo_db = spider.db_name
         self.client = pymongo.MongoClient('localhost',int(spider.port))
     #crezione database
         self.db = self.client[self.mongo_db]

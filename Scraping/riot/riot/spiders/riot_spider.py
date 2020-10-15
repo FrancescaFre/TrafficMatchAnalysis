@@ -1,4 +1,9 @@
-#https://docs.scrapy.org/en/latest/topics/request-response.html#scrapy.http.Response
+# documentazione response di scrapy
+# https://docs.scrapy.org/en/latest/topics/request-response.html#scrapy.http.Response
+
+# documentazione per i parametri di count_documents di pymongo: 
+# https://api.mongodb.com/python/current/api/pymongo/collection.html?highlight=count_documents#pymongo.collection.Collection.count_documents
+      
 import scrapy
 import itertools
 import logging
@@ -7,25 +12,38 @@ from ..item_data import User_data, Match_data
 
 class RiotSpider(scrapy.Spider):
     name = 'riot'
-    
-    def start_requests(self):
+    riot_db = 'riot_db'
+
+    #devo fare l'init perchè altrimenti al reload del crawler non fa il bind con il db da start_requests, giustamente direi
+    def __init__(self, *a, **kw):
+        super(RiotSpider, self).__init__(*a, **kw)
+        print("start bind db:")
         #collego il db con il crawler (collego la porta data in input)
         client = MongoClient('localhost', int(self.port)) 
         #carico i dati del db nella var riot_db
-        riot_db= client.riots_data_second
+        global riot_db
+        riot_db = client.riots_data_second
+
+    def start_requests(self):
+        print("start request batch")
+        
+       # self.state['first'] = 0
+        
         #per ogni match prendo tutti gli utenti
         set_p= set(itertools.chain.from_iterable(((uid for uid in match['partecipants_list'] if uid!="0") for match in riot_db.match.find() )))
         
         print(len(set_p)) #stampo il numero di player unici 
-
-        #per ogni utente genero una richiesta: 
+        #per ogni utente genero una richiesta: si tratta del pool iniziale di richieste. 
         for accountId in set_p:
             request_summoner = scrapy.Request(
-                url = self._getUrl("summoner", accountId)
+                url = self._getUrl("summoner", accountId),
+                priority = 3 
+                # priorità più alta così queste richieste vengono fatte subito, 
+                # non ho capito se in caso di interruzione e ripresa del crawler viene ripreso anche il ciclo, 
+                # nel dubbio metto priorità più alta così vengono generate almeno le richieste. 
             )
             yield request_summoner
-        
-    #ASSUMO che usando il file REQUESTS.SEEN, gli account già parsati vengano ignorati    
+        print("end request batch")
 
     #---------------------------------------- PARSE SUMMONER
     #controllo le informazioni del summoner
@@ -39,7 +57,6 @@ class RiotSpider(scrapy.Spider):
         item['number_matches'] = 0
         item['banned'] = True
         logging.info(f"START parse matchlist userId: {item['accountId']}")
-      
 
         request_matches = scrapy.Request(
             url = self._getUrl("matchlist", item['accountId']),
@@ -67,19 +84,23 @@ class RiotSpider(scrapy.Spider):
                 cb_kwargs = dict(args = list_matches, count = index, item = item)
             ) 
             yield request_matches
+
         else: 
             item['banned'] = False
             item['number_matches'] = len(list_matches)
-            yield item
+            yield item #salvo nel db l'utente 
+
             #ciclo tutti i match per ottenerne una chiama per ogni match da controllare con parse_match
             logging.info(f"END parse matchlist userId: {accountId} - matches: {len(list_matches)}")
             for matchId in list_matches: 
-                request_match = scrapy.Request(
-                    url = self._getUrl("match", matchId),
-                    callback=self.parse_match, 
-                    priority = 1
-                )
-                yield request_match  
+                #CHECK: SE IL MATCH è GIà NEL DB skip: 
+                if riot_db.match.find_one({"gameId": matchId}) == None:
+                    request_match = scrapy.Request(
+                        url = self._getUrl("match", matchId),
+                        callback=self.parse_match, 
+                        priority = 1
+                    )
+                    yield request_match  
                         
     #---------------------------------------- PARSE Singolo MATCH
     def parse_match(self, response): 
@@ -99,15 +120,16 @@ class RiotSpider(scrapy.Spider):
         yield item
         
         for accountId in item['partecipants_list'] :
-            request_summoner = scrapy.Request(
-                url = self._getUrl("summoner", accountId)
-            )
-            yield request_summoner
+            #CHECK: SE IL SUMMONER è GIà NEL DB, cioè ha già visto tutti i match parsati, skip
+            if riot_db.user.find_one({"accountId":accountId}) == None:
+                request_summoner = scrapy.Request(
+                    url = self._getUrl("summoner", accountId)
+                )
+                yield request_summoner
        
 
     def _getUrl(self, type, id):
-
-        if type == "summoner by name": return f"https://euw1.api.riotgames.com/lol/summoner/v4/summoners/by-name/{id}?api_key={self.riot_key}"
+        if type == "summoner by name" : return f"https://euw1.api.riotgames.com/lol/summoner/v4/summoners/by-name/{id}?api_key={self.riot_key}"
         if type == "matchlist": return f"https://euw1.api.riotgames.com/lol/match/v4/matchlists/by-account/{id}?api_key={self.riot_key}"
         if type == "match": return f"https://euw1.api.riotgames.com/lol/match/v4/matches/{id}?api_key={self.riot_key}"
         if type == "summoner": return f"https://euw1.api.riotgames.com/lol/summoner/v4/summoners/by-account/{id}?api_key={self.riot_key}"
