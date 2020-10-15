@@ -9,16 +9,27 @@ The API used are:
 
 
 ___
-RUN
+## RUN
 
-source activate
+`scrapy activate riot_py38`
 
-scrapy activate riot_py38
+`export RIOT_KEY=...` <-- RICORDALO.
 
-scrapy crawl riot -s JOBDIR=crawls/leolouchsly-1 -a riot_key=$RIOT_KEY -a port=27017 -a user="lelouchsly"
+`scrapy crawl riot -s JOBDIR=crawls/<nome-job-dir> -a riot_key=$RIOT_KEY -a port=27017 -a db_name="riots_data_second"`
 
+> in caso di interruzione `ctrl+c` e attendere fino a che non si è fermato e il terminale non restituisce il controllo
 
-ULTERIORI COMANDI: 
+> per riprendendere l'esecuzione usare esattamente il comando di start
+
+### Argomenti crawler
+> precedere gli arg con `-a <nome arg>=<valore arg>` 
+
+* riot_key = chiave per accedere alle api di TrafficMatch
+* port = porta di mongo db a cui accedere
+* db_name = nome del db a cui aggiungere i dati
+___
+
+## ULTERIORI COMANDI: 
 --logfile FILE_NAME: Overrides LOG_FILE=FILE_NAME
 
 --loglevel/-L LEVEL: Overrides LOG_LEVEL
@@ -29,3 +40,7 @@ ULTERIORI COMANDI:
 port = porta per mongodb
 user = utente da cui iniziare il crawl
 riot_key = key per usare le api 
+
+___
+## Schema
+![Schema](drawio.png)
